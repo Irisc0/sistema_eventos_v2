@@ -9,7 +9,12 @@ from datetime import timedelta
 from calendar import monthrange
 from flask import request, redirect, url_for, render_template, flash, jsonify, make_response
 import pdfkit
-config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+import shutil
+
+# Detectar la ruta de wkhtmltopdf dinámicamente (Para las pruebas en Render)
+path_wkhtmltopdf = shutil.which('wkhtmltopdf')
+config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+
 
 eventos = Blueprint('eventos', __name__)
 
