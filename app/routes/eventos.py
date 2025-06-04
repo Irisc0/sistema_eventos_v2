@@ -352,8 +352,11 @@ def reporte_semana(year, week):
 @eventos.route('/reporte_mes/<int:year>/<int:month>')
 @login_required
 def reporte_mes(year, month):
-    import locale
-    locale.setlocale(locale.LC_TIME, 'Spanish_Spain')  # Para que en Windows el mes en el titulo salga en español
+    try:
+        import locale
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+    except locale.Error:
+        pass  # Si no está disponible, sigue sin cambiar el locale
 
     start = datetime(year, month, 1)
     end_day = monthrange(year, month)[1]
@@ -361,7 +364,7 @@ def reporte_mes(year, month):
 
     eventos = Evento.query.filter(
         Evento.aprobado == True,
-        Evento.fecha_fin >= start,
+        Evento.fecha_inicio >= start,
         Evento.fecha_inicio <= end
     ).order_by(Evento.fecha_inicio.asc()).all()
 
