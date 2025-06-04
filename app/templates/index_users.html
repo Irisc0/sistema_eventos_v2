@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario - Usuario{% endblock %}
+
+{% block content %}
+    <h1>Calendario de Eventos</h1>
+
+    <div class="top-bar">
+        <a href="{{ url_for('auth.logout') }}" class="logout">Cerrar sesión</a>
+    </div>
+
+    <div id="calendar"></div>
+
+    <h2>Mis Solicitudes</h2>
+    {% include 'includes/lista_eventos_usuario.html' %}
+
+    <h2>Solicitar un Evento</h2>
+    {% include 'includes/formulario_evento.html' %}
+
+    {% include 'includes/modal_evento.html' %}
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+            const hoverBox = document.createElement('div');
+            hoverBox.className = 'fc-event-hover-box';
+            hoverBox.style.display = 'none';
+            document.body.appendChild(hoverBox);
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                events: "{{ url_for('eventos.get_events') }}",
+                eventDidMount: function(info) {
+                    const el = info.el;
+                    const props = info.event.extendedProps;
+
+                    // HOVER
+                    el.addEventListener('mouseenter', function(e) {
+                        hoverBox.innerHTML = `
+    <b>${info.event.title}</b><br>
+    <b>Responsable:</b> ${props.responsable}<br>
+    <b>Inicio:</b> ${new Date(info.event.start).toLocaleString()}<br>
+    <b>Fin:</b> ${new Date(info.event.end).toLocaleString()}<br>
+    <b>Lugar:</b> ${props.lugar}<br>
+    <b>Descripción:</b> ${props.descripcion || '-'}
+                        `;
+                        hoverBox.style.display = 'block';
+                        hoverBox.style.left = e.clientX + 'px';
+                        hoverBox.style.top = (e.clientY - hoverBox.offsetHeight - 10) + 'px';
+                    });
+
+                    el.addEventListener('mouseleave', function () {
+                        hoverBox.style.display = 'none';
+                    });
+
+                    // CLICK PARA MOSTRAR PANEL LATERAL
+                    el.addEventListener('click', function () {
+                        const date = info.event.startStr.slice(0, 10);  // Solo la parte YYYY-MM-DD
+                        const dateEvents = calendar.getEvents().filter(evt =>
+                            evt.startStr.slice(0, 10) === date
+                        );
+
+                        const contenedor = document.getElementById('detalleDia');
+                        contenedor.innerHTML = dateEvents.map(ev => {
+                            const ex = ev.extendedProps;
+                            return `
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #666; padding-bottom: 8px;">
+                                    <b>${ev.title}</b><br>
+                                    <b>Responsable:</b> ${ex.responsable}<br>
+                                    <b>Inicio:</b> ${new Date(ev.start).toLocaleString()}<br>
+                                    <b>Fin:</b> ${new Date(ev.end).toLocaleString()}<br>
+                                    <b>Lugar:</b> ${ex.lugar}<br>
+                                    <b>Descripción:</b> ${ex.descripcion || '-'}
+                                </div>
+                            `;
+                        }).join('');
+
+                        // Mostrar panel deslizante
+                        document.getElementById('overlay').style.display = 'block';
+                        const panel = document.getElementById('panelLateral');
+                        panel.style.display = 'block';
+                        setTimeout(() => {
+                            panel.style.right = '0';
+                        }, 10);
+                    });
+                }
+            });
+
+            calendar.render();
+
+            // Cerrar el panel lateral al hacer clic en la X
+            document.getElementById('cerrarPanel').addEventListener('click', function () {
+                const panel = document.getElementById('panelLateral');
+                panel.style.right = '-320px';
+                setTimeout(() => {
+                    panel.style.display = 'none';
+                    document.getElementById('overlay').style.display = 'none';
+                }, 300);
+            });
+
+            // Cerrar si se hace clic fuera (en el fondo oscuro)
+            document.getElementById('overlay').addEventListener('click', function () {
+                document.getElementById('cerrarPanel').click();
+            });
+        });
+    </script>
+
+{% endblock %}

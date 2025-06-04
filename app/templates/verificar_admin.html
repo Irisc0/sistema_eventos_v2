@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Verificación Administrador{% endblock %}
+
+{% block content %}
+<h2>Verificación de Seguridad</h2>
+<p>Ingresa la clave maestra para acceder al panel de gestión de usuarios:</p>
+
+<form method="POST" style="max-width: 400px; margin: auto;">
+    <label for="clave_segura">Clave:</label>
+    <input type="password" id="clave_segura" name="clave_segura" required>
+    <button type="submit">Verificar</button>
+</form>
+{% endblock %}

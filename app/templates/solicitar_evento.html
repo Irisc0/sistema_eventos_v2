@@ -1,0 +1,38 @@
+<!-- templates/solicitar_evento.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solicitar Evento</title>
+</head>
+<body>
+    <h1>Solicitar un Evento</h1>
+    <form method="POST" action="{{ url_for('main.solicitar') }}">
+        <label for="nombre">Nombre del Evento:</label>
+        <input type="text" id="nombre" name="nombre" required>
+        <br>
+        
+        <label for="lugar">Lugar:</label>
+        <select id="lugar" name="lugar" required>
+            <option value="">Seleccione un lugar</option>
+            <option value="Auditorio">Auditorio</option>
+            <option value="Sala de conferencias">Sala de conferencias</option>
+            <option value="Patio principal">Patio principal</option>
+        </select>
+        <br>
+        
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion"></textarea>
+        <br>
+        
+        <label for="fecha_inicio">Fecha de Inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+        <br>
+        
+        <label for="fecha_fin">Fecha de Fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required>
+        <br>
+        
+        <button type="submit">Enviar Solicitud</button>
+    </form>
+</body>
+</html> 

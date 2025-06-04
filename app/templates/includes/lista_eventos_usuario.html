@@ -1,0 +1,106 @@
+<div style="max-width: 1000px; margin: 40px auto; display: flex; justify-content: center; align-items: center; ">    
+    <table style="width: 100%; border-collapse: collapse; background-color: #2c2c2c; color: #fff; margin: 0 auto">
+        <thead>
+            <tr style="background-color: #007bff; color: white;">
+                <th style="padding: 10px; border: 1px solid #555;">Nombre</th>
+                <th style="padding: 10px; border: 1px solid #555;">Lugar</th>
+                <th style="padding: 10px; border: 1px solid #555;">Responsable</th>
+                <th style="padding: 10px; border: 1px solid #555;">Inicio</th>
+                <th style="padding: 10px; border: 1px solid #555;">Fin</th>
+                <th style="padding: 10px; border: 1px solid #555;">Descripción</th>
+                <th style="padding: 10px; border: 1px solid #555;">Estado</th>
+                <th style="padding: 10px; border: 1px solid #555;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for evento in eventos_usuario %}
+                <tr id="fila-evento-{{ evento.id }}" class="
+                    {% if evento.aprobado %}
+                        estado-aprobado
+                    {% elif evento.aprobado is not none and not evento.aprobado %}
+                        estado-rechazado
+                    {% else %}
+                        estado-pendiente
+                    {% endif %}
+                ">
+                    <td style="padding: 10px;">{{ evento.nombre }}</td>
+                    <td style="padding: 10px;">{{ evento.lugar }}</td>
+                    <td style="padding: 10px;">{{ evento.responsable }}</td>
+                    <td style="padding: 10px;">{{ evento.fecha_inicio.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td style="padding: 10px;">{{ evento.fecha_fin.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td style="padding: 10px;">{{ evento.descripcion }}</td>
+                    <td style="padding: 10px;">
+                        {% if evento.aprobado %}
+                            <span style="color: #28a745;">Aprobado</span>
+                        {% elif evento.aprobado is not none and not evento.aprobado %}
+                            <span style="color: #ffc107;">Rechazado</span>
+                            {% if evento.motivo_rechazo %}
+                                <br><small>Motivo: {{ evento.motivo_rechazo }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #ffc107;">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px; text-align: center;">
+                        {% if evento.aprobado is not true %}
+                            <form method="POST" action="{{ url_for('eventos.eliminar_evento', evento_id=evento.id) }}" style="display:block; margin-bottom: 5px;">
+                                <button type="submit" style="padding: 5px 10px; background-color: #dc3545; color: white; border: none; border-radius: 5px;">Eliminar</button>
+                            </form>
+                            <button onclick='editarEvento({{ evento.id }})' style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Editar</button>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <!-- Fila de edición -->
+                <tr id="editar-fila-{{ evento.id }}" style="display: none; background-color: #1f1f1f;">
+                    <td colspan="8">
+                        <form method="POST" action="{{ url_for('eventos.editar_evento', evento_id=evento.id) }}" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: flex-start; padding: 15px;">
+                            
+                            <div style="flex: 1; min-width: 120px;">
+                                <label for="nombre" style="font-size: 12px; color: #ccc;">Nombre del evento</label>
+                                <input type="text" name="nombre" value="{{ evento.nombre }}" required style="width: 100%; padding: 6px;">
+                            </div>
+
+                            <div style="flex: 1; min-width: 160px;">
+                                <label for="lugar" style="font-size: 12px; color: #ccc;">Lugar</label>
+                                <select name="lugar" required style="width: 100%; padding: 6px;">
+                                    <option value="{{ evento.lugar }}">{{ evento.lugar }}</option>
+                                    {% for lugar in lugares %}
+                                        {% if lugar != evento.lugar %}
+                                            <option value="{{ lugar }}">{{ lugar }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div style="flex: 1; min-width: 140px;">
+                                <label for="responsable" style="font-size: 12px; color: #ccc;">Responsable</label>
+                                <input type="text" name="responsable" value="{{ evento.responsable }}" required style="width: 100%; padding: 6px;">
+                            </div>
+
+                            <div style="flex: 1; min-width: 180px;">
+                                <label for="fecha_inicio" style="font-size: 12px; color: #ccc;">Fecha de Inicio</label>
+                                <input type="datetime-local" name="fecha_inicio" value="{{ evento.fecha_inicio.strftime('%Y-%m-%dT%H:%M') }}" required style="width: 100%; padding: 6px;">
+                            </div>
+
+                            <div style="flex: 1; min-width: 180px;">
+                                <label for="fecha_fin" style="font-size: 12px; color: #ccc;">Fecha de Fin</label>
+                                <input type="datetime-local" name="fecha_fin" value="{{ evento.fecha_fin.strftime('%Y-%m-%dT%H:%M') }}" required style="width: 100%; padding: 6px;">
+                            </div>
+
+                            <div style="flex: 1 1 100%;">
+                                <label for="descripcion" style="font-size: 12px; color: #ccc;">Descripción del evento</label>
+                                <textarea name="descripcion" rows="2" style="width: 100%; padding: 6px;">{{ evento.descripcion }}</textarea>
+                            </div>
+
+                            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; width: 100%;">
+                                <button type="submit" style="padding: 6px 12px; background-color: #28a745; color: white; border: none; border-radius: 5px;">Editar y reenviar</button>
+                                <button type="button" onclick='cancelarEdicion({{ evento.id }})' style="padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 5px;">Cancelar</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: white;
+            color: #222;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-left: 5px solid #007bff;
+            margin-top: 40px;
+        }
+
+        .evento {
+            margin: 15px 0 25px 0;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .evento b {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .evento p {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ titulo }}</h1>
+
+    {% set semanas = {} %}
+    {% for evento in eventos %}
+        {% set inicio_semana = (evento.fecha_inicio - timedelta(days=evento.fecha_inicio.weekday())).date() %}
+        {% if semanas[inicio_semana] is defined %}
+            {% set _ = semanas[inicio_semana].append(evento) %}
+        {% else %}
+            {% set semanas = semanas.update({inicio_semana: [evento]}) or semanas %}
+        {% endif %}
+    {% endfor %}
+
+    {% for inicio_semana, eventos_semana in semanas|dictsort %}
+        {% set fin_semana = inicio_semana + timedelta(days=6) %}
+        <h2>Semana {{ loop.index }}: {{ inicio_semana.strftime('%d/%m/%Y') }} al {{ fin_semana.strftime('%d/%m/%Y') }}</h2>
+        {% for evento in eventos_semana %}
+            <div class="evento">
+                <p><b>Nombre:</b> {{ evento.nombre }}</p>
+                <p><b>Inicio:</b> {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p><b>Fin:</b> {{ evento.fecha_fin.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p><b>Responsable:</b> {{ evento.responsable }}</p>
+                <p><b>Lugar:</b> {{ evento.lugar }}</p>
+                <p><b>Descripción:</b> {{ evento.descripcion or '-' }}</p>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</body>
+</html>

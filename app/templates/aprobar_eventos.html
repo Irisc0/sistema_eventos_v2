@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Eventos Pendientes</h2>
+<table>
+    <tr>
+        <th>Nombre</th>
+        <th>Lugar</th>
+        <th>Fecha</th>
+        <th>Acción</th>
+    </tr>
+    {% for evento in eventos %}
+    <tr>
+        <td>{{ evento.nombre }}</td>
+        <td>{{ evento.lugar }}</td>
+        <td>{{ evento.fecha_inicio.strftime('%Y-%m-%d') }}</td>
+        <td>
+            <a href="{{ url_for('main.aprobar_evento', evento_id=evento.id) }}">✅ Aprobar</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

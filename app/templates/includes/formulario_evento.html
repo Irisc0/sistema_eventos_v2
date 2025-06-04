@@ -1,0 +1,78 @@
+<style>
+    .formulario-evento {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 25px;
+        background-color: #111;
+        border: 1px solid #333;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); 
+    }
+
+    .formulario-evento label {
+        display: block;
+        margin-top: 15px;
+        color: #ccc;
+        font-weight: bold;
+    }
+
+    .formulario-evento input,
+    .formulario-evento select,
+    .formulario-evento textarea {
+        width: 97%;  /* Cambiado de 145% a 100% */
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #555;
+        border-radius: 6px;
+        background-color: #222;
+        color: #fff;
+    }
+
+    .formulario-evento button {
+        width: 100%;
+        padding: 12px;
+        margin: 20px auto 0 auto;  
+        border: none;
+        border-radius: 6px;
+        background-color: #28a745;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        display: block;  
+    }
+
+    .formulario-evento button:hover {
+        background-color: #218838;
+    }
+</style>
+
+<div class="formulario-evento">
+    <form method="POST" action="{{ url_for('eventos.solicitar_evento') }}">
+        <label for="nombre">Nombre del Evento:</label>
+        <input type="text" id="nombre" name="nombre" required>
+
+        <label for="responsable">Responsable:</label>
+        <input type="text" id="responsable" name="responsable" required>
+
+        <label for="fecha_inicio">Fecha y Hora de Inicio:</label>
+        <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" required>
+
+        <label for="fecha_fin">Fecha y Hora de Fin:</label>
+        <input type="datetime-local" id="fecha_fin" name="fecha_fin" required>
+
+        <label for="lugar">Lugar:</label>
+        <select id="lugar" name="lugar" required>
+            <option value="">Seleccione un lugar</option>
+            {% for lugar in lugares %}
+                <option value="{{ lugar }}">{{ lugar }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" rows="3"></textarea>
+
+        <button type="submit">Enviar Solicitud</button>
+    </form>
+</div>
+
+
