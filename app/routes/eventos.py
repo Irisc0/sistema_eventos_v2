@@ -10,11 +10,7 @@ from calendar import monthrange
 from flask import request, redirect, url_for, render_template, flash, jsonify, make_response
 import pdfkit
 import shutil
-
-# Detectar la ruta de wkhtmltopdf dinámicamente (Para las pruebas en Render)
-path_wkhtmltopdf = shutil.which('wkhtmltopdf')
-config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
-
+import platform
 
 eventos = Blueprint('eventos', __name__)
 
@@ -318,45 +314,14 @@ def reset_password(user_id):
     return redirect(url_for('eventos.gestion_usuarios'))
 
 
-@eventos.route('/reporte_semana/<int:year>/<int:week>')
-@login_required
-def reporte_semana(year, week):
-    import pdfkit
-    from flask import make_response
-
-    # Calcular rango de fechas de la semana
-    from datetime import datetime, timedelta
-    d = datetime.strptime(f'{year}-W{week}-1', "%Y-W%W-%w")
-    start = d
-    end = start + timedelta(days=6)
-
-    eventos = Evento.query.filter(
-        Evento.aprobado == True,
-        Evento.fecha_inicio >= start,
-        Evento.fecha_fin <= end
-    ).all()
-
-    if not eventos:
-        flash("No hay eventos para esta semana.", "warning")
-        return redirect(url_for('eventos.user_index'))
-
-    html = render_template("reporte_pdf.html", eventos=eventos, titulo=f"Eventos Semana {week}, {year}")
-    pdf = pdfkit.from_string(html, False, configuration=config)
-
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'inline; filename=reporte_semana_{week}_{year}.pdf'
-    return response
-
-
 @eventos.route('/reporte_mes/<int:year>/<int:month>')
 @login_required
 def reporte_mes(year, month):
     try:
         import locale
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-    except locale.Error:
-        pass  # Si no está disponible, sigue sin cambiar el locale
+    except:
+        pass
 
     start = datetime(year, month, 1)
     end_day = monthrange(year, month)[1]
@@ -370,30 +335,22 @@ def reporte_mes(year, month):
 
     if not eventos:
         flash("No hay eventos en este mes.", "warning")
-        return redirect(url_for('eventos.user_index' if current_user.rol == 'usuario' else 'eventos.admin_index'))
+        return redirect(url_for('eventos.admin_index' if current_user.rol == 'admin' else 'eventos.user_index'))
 
-    titulo = f"Eventos de {start.strftime('%B de %Y').capitalize()}"
+    titulo = f"Eventos de {start.strftime('%B de %Y')}"
+    html = render_template("reporte_pdf.html", eventos=eventos, titulo=titulo)
 
-    html = render_template("reporte_pdf.html", eventos=eventos, titulo=titulo, timedelta=timedelta)
+    # Detectar sistema y configurar ruta de wkhtmltopdf
+    if platform.system() == "Windows":
+        path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+    else:
+        path_wkhtmltopdf = "/usr/bin/wkhtmltopdf"  # en Render/Linux
 
-    config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+    config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+
     pdf = pdfkit.from_string(html, False, configuration=config)
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'inline; filename=reporte_mes_{month}_{year}.pdf'
     return response
-
-@eventos.route('/eliminar_evento/<int:evento_id>', methods=['POST'])
-@login_required
-def eliminar_evento_directo(evento_id):
-    if current_user.rol != 'admin':
-        return "No autorizado", 403
-
-    evento = Evento.query.get(evento_id)
-    if not evento:
-        return "Evento no encontrado", 404
-
-    db.session.delete(evento)
-    db.session.commit()
-    return "Evento eliminado correctamente", 200
