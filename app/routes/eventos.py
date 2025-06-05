@@ -12,6 +12,13 @@ import pdfkit
 import shutil
 import platform
 
+# Configurar wkhtmltopdf dependiendo del sistema
+if platform.system() == "Windows":
+    config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+else:
+    config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')  # Ruta por defecto en Render/Linux
+
+
 eventos = Blueprint('eventos', __name__)
 
 # Lista de lugares reusables
@@ -317,37 +324,22 @@ def reset_password(user_id):
 @eventos.route('/reporte_mes/<int:year>/<int:month>')
 @login_required
 def reporte_mes(year, month):
-    try:
-        import locale
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-    except:
-        pass
-
     start = datetime(year, month, 1)
-    end_day = monthrange(year, month)[1]
-    end = datetime(year, month, end_day, 23, 59)
+    end = datetime(year, month, monthrange(year, month)[1], 23, 59)
 
     eventos = Evento.query.filter(
         Evento.aprobado == True,
         Evento.fecha_inicio >= start,
         Evento.fecha_inicio <= end
-    ).order_by(Evento.fecha_inicio.asc()).all()
+    ).order_by(Evento.fecha_inicio).all()
 
     if not eventos:
         flash("No hay eventos en este mes.", "warning")
         return redirect(url_for('eventos.admin_index' if current_user.rol == 'admin' else 'eventos.user_index'))
 
     titulo = f"Eventos de {start.strftime('%B de %Y')}"
-    html = render_template("reporte_pdf.html", eventos=eventos, titulo=titulo)
 
-    # Detectar sistema y configurar ruta de wkhtmltopdf
-    if platform.system() == "Windows":
-        path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-    else:
-        path_wkhtmltopdf = "/usr/bin/wkhtmltopdf"  # en Render/Linux
-
-    config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
-
+    html = render_template("reporte_pdf.html", eventos=eventos, titulo=titulo, timedelta=timedelta)
     pdf = pdfkit.from_string(html, False, configuration=config)
 
     response = make_response(pdf)
