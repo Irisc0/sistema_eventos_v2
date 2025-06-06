@@ -8,35 +8,29 @@ from datetime import datetime
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = 'auth.index'  # Redirige a login si no está autenticado
-
-from app.models import User  #Importar modelo de usuario
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+login_manager.login_view = 'auth.index'
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    with app.app_context():
-        from app.models import Evento, User
-        db.create_all()
-
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    # Registro de Blueprints
     from app.routes.auth import auth
     from app.routes.eventos import eventos
     app.register_blueprint(auth)
     app.register_blueprint(eventos)
+
+    from app.models import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
     @app.context_processor
     def inject_now():
         return {'now': datetime.now()}
-   
+
     return app
-
-
