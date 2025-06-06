@@ -20,6 +20,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    with app.app_context():
+        from app.models import Evento, User
+        db.create_all()
+
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -34,3 +38,5 @@ def create_app():
         return {'now': datetime.now()}
    
     return app
+
+
