@@ -4,11 +4,11 @@ from datetime import timedelta
 
 app = create_app()
 
-# Ejecuta upgrade para aplicar migraciones automáticamente
+# Ejecutar migraciones automáticamente al arrancar en Render
 with app.app_context():
     upgrade()
 
-# Opcional: duración de sesión
+# Configurar duración de sesión
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(seconds=0)
 
 if __name__ == '__main__':
