@@ -2,10 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Instituto Tecnológico de Puebla</title>
-    <title>{% block title %}Calendario de Eventos{% endblock %}</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js"></script>
+    <title>{% block title %}Instituto Tecnológico de Puebla | {% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">    <script src="https://cdn.jsdelivr.net/npm/fullcalendar/index.global.min.js"></script>
     <style>
         {% block styles %}
             body {
