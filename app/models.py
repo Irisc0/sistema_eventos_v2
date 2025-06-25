@@ -29,8 +29,12 @@ class Evento(db.Model):
     responsable = db.Column(db.String(100), nullable=True)
     fecha_inicio = db.Column(db.DateTime, nullable=False)
     fecha_fin = db.Column(db.DateTime, nullable=False)
-    aprobado = db.Column(db.Boolean, default=None)
-    motivo_rechazo = db.Column(db.Text, nullable=True)
+
+    participantes = db.Column(db.Integer, nullable=True)
+    genero = db.Column(db.String(10), nullable=True)  # "Femenil", "Varonil", "Mixto"
+    tipo_evento = db.Column(db.String(10), nullable=True)  # "Interno", "Externo"
+    organizacion = db.Column(db.String(100), nullable=True)  # Departamento o externo
+    imagen = db.Column(db.String(255), nullable=True)  # Ruta de imagen
 
     usuario_id = db.Column(
         db.Integer,
@@ -38,5 +42,8 @@ class Evento(db.Model):
         nullable=False
     )
 
+    aprobado = db.Column(db.Boolean, default=None)
+    motivo_rechazo = db.Column(db.Text, nullable=True)
+
     def __repr__(self):
-        return f"<Evento {self.id}: {self.nombre} - {'Aprobado' if self.aprobado else 'Pendiente'}>"
+        return f"<Evento {self.id}: {self.nombre} | Usuario: {self.usuario.username} | {'Aprobado' if self.aprobado else 'Pendiente'}>"

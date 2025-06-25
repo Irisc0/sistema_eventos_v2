@@ -1,4 +1,4 @@
-<table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
+<table style="width:100%; border-collapse: collapse; margin-bottom: 30px; text-align: center;">
     <thead>
         <tr style="background-color: #007bff; color: white;">
             <th style="padding: 10px; border: 1px solid #ddd;">Nombre del evento</th>
@@ -12,41 +12,53 @@
     </thead>
     <tbody>
         {% for evento in eventos %}
-        <tr style="border: 1px solid #ddd;">
+        <!-- Fila principal -->
+        <tr style="border: 1px solid #444;">
             <td style="padding: 10px;">{{ evento.nombre }}</td>
             <td style="padding: 10px;">{{ evento.responsable }}</td>
             <td style="padding: 10px;">{{ evento.lugar }}</td>
             <td style="padding: 10px;">{{ evento.fecha_inicio.strftime('%Y-%m-%d %H:%M') }}</td>
             <td style="padding: 10px;">{{ evento.fecha_fin.strftime('%Y-%m-%d %H:%M') }}</td>
             <td style="padding: 10px;">{{ evento.descripcion }}</td>
-            <td style="padding: 10px; display: flex; gap: 6px;">
-                <a href="{{ url_for('eventos.aprobar_evento', evento_id=evento.id) }}"
-                    style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none;">
-                    Aprobar
-                </a>
-
-                <button type="button" onclick="document.getElementById('modal-{{ evento.id }}').style.display='block'"
-                    style="background-color: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 5px;">
-                    Rechazar
-                </button>
-
-                <!-- Modal de rechazo -->
-                <div id="modal-{{ evento.id }}" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.4);">
-                    <div style="background-color:#fff; margin:10% auto; padding:20px; border:1px solid #888; width:300px; border-radius:10px;">
-                        <h3>Motivo del rechazo</h3>
-                        <form method="POST" action="{{ url_for('eventos.rechazar_evento', evento_id=evento.id) }}">
-                            <textarea name="motivo_rechazo" id="motivo-{{ evento.id }}" rows="4" style="width:100%;" placeholder="Motivo del rechazo" oninput="activarBoton({{ evento.id }})"></textarea>
-                            <div style="margin-top: 10px; text-align: right;">
-                                <button type="button" onclick="document.getElementById('modal-{{ evento.id }}').style.display='none'" style="padding: 5px 10px;">Cancelar</button>
-                                <button type="submit" id="enviar-{{ evento.id }}" disabled style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 5px;">
-                                    Rechazar y enviar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <td style="padding: 10px;">
+                <div style="display: flex; justify-content: center; gap: 8px;">
+                    <a href="{{ url_for('eventos.aprobar_evento', evento_id=evento.id) }}"
+                        style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none;">
+                        Aprobar
+                    </a>
+                    <button type="button" onclick="document.getElementById('modal-{{ evento.id }}').style.display='block'"
+                        style="background-color: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 5px;">
+                        Rechazar
+                    </button>
                 </div>
             </td>
         </tr>
+
+        <tr>
+            <td colspan="7" style="padding: 8px; border: 1px solid #444; border-top: none; text-align: center; font-size: 15px;">
+                <strong>Participantes:</strong> {{ evento.participantes or 'No especificado' }} |
+                <strong>Género:</strong> {{ evento.genero or 'No especificado' }} |
+                <strong>Tipo de evento:</strong> {{ evento.tipo_evento or 'No especificado' }} |
+                <strong>Organización:</strong> {{ evento.organizacion or 'No especificado' }} |
+                <strong>Solicitado por:</strong> {{ evento.usuario.username }}
+            </td>
+        </tr>
+
+        <!-- Modal de rechazo -->
+        <div id="modal-{{ evento.id }}" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.4);">
+            <div style="background-color:#fff; margin:10% auto; padding:20px; border:1px solid #888; width:300px; border-radius:10px;">
+                <h3>Motivo del rechazo</h3>
+                <form method="POST" action="{{ url_for('eventos.rechazar_evento', evento_id=evento.id) }}">
+                    <textarea name="motivo_rechazo" id="motivo-{{ evento.id }}" rows="4" style="width:100%;" placeholder="Motivo del rechazo" oninput="activarBoton({{ evento.id }})"></textarea>
+                    <div style="margin-top: 10px; text-align: right;">
+                        <button type="button" onclick="document.getElementById('modal-{{ evento.id }}').style.display='none'" style="padding: 5px 10px;">Cancelar</button>
+                        <button type="submit" id="enviar-{{ evento.id }}" disabled style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 5px;">
+                            Rechazar y enviar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         {% endfor %}
     </tbody>
 </table>

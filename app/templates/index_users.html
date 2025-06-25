@@ -4,6 +4,8 @@
 
 {% block content %}
     <h1>Instituto Tecnológico de Puebla</h1>
+    <h1>Sub dirección de planeación y Vinculación</h1>
+    <h1>Departamento de Actividades extraescolares</h1>
     <h1>Calendario de Eventos</h1>
 
     <div class="top-bar">
@@ -42,12 +44,16 @@
                     // HOVER
                     el.addEventListener('mouseenter', function(e) {
                         hoverBox.innerHTML = `
-    <b>${info.event.title}</b><br>
-    <b>Responsable:</b> ${props.responsable}<br>
-    <b>Inicio:</b> ${new Date(info.event.start).toLocaleString()}<br>
-    <b>Fin:</b> ${new Date(info.event.end).toLocaleString()}<br>
-    <b>Lugar:</b> ${props.lugar}<br>
-    <b>Descripción:</b> ${props.descripcion || '-'}
+                            <b>${info.event.title}</b><br>
+                            <b>Responsable:</b> ${props.responsable}<br>
+                            <b>Inicio:</b> ${new Date(info.event.start).toLocaleString()}<br>
+                            <b>Fin:</b> ${new Date(info.event.end).toLocaleString()}<br>
+                            <b>Lugar:</b> ${props.lugar}<br>
+                            <b>Participantes:</b> ${props.participantes || '-'}<br>
+                            <b>Género:</b> ${props.genero || '-'}<br>
+                            <b>Tipo:</b> ${props.tipo_evento || '-'}<br>
+                            <b>Organización:</b> ${props.organizacion || '-'}<br>
+                            <b>Descripción:</b> ${props.descripcion || '-'}
                         `;
                         hoverBox.style.display = 'block';
                         hoverBox.style.left = e.clientX + 'px';
@@ -75,6 +81,10 @@
                                     <b>Inicio:</b> ${new Date(ev.start).toLocaleString()}<br>
                                     <b>Fin:</b> ${new Date(ev.end).toLocaleString()}<br>
                                     <b>Lugar:</b> ${ex.lugar}<br>
+                                    <b>Participantes:</b> ${props.participantes || '-'}<br>
+                                    <b>Género:</b> ${props.genero || '-'}<br>
+                                    <b>Tipo:</b> ${props.tipo_evento || '-'}<br>
+                                    <b>Organización:</b> ${props.organizacion || '-'}<br>
                                     <b>Descripción:</b> ${ex.descripcion || '-'}
                                 </div>
                             `;

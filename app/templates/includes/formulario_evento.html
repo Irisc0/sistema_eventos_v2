@@ -6,7 +6,8 @@
         background-color: #111;
         border: 1px solid #333;
         border-radius: 12px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); 
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+        font-size: 14px;
     }
 
     .formulario-evento label {
@@ -19,30 +20,56 @@
     .formulario-evento input,
     .formulario-evento select,
     .formulario-evento textarea {
-        width: 97%;  /* Cambiado de 145% a 100% */
-        padding: 10px;
+        width: 97%;
+        padding: 8px;
         margin-top: 5px;
         border: 1px solid #555;
         border-radius: 6px;
         background-color: #222;
         color: #fff;
+        font-size: 13px;
     }
 
     .formulario-evento button {
         width: 100%;
         padding: 12px;
-        margin: 20px auto 0 auto;  
+        margin: 20px auto 0 auto;
         border: none;
         border-radius: 6px;
         background-color: #28a745;
         color: white;
         font-size: 16px;
         cursor: pointer;
-        display: block;  
+        display: block;
     }
 
     .formulario-evento button:hover {
         background-color: #218838;
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .radio-group label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin: 0;
+    }
+
+    .organizacion-wrapper {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: center;
+    }
+
+    .organizacion-wrapper > div {
+        flex: 1;
     }
 </style>
 
@@ -68,6 +95,68 @@
             {% endfor %}
         </select>
 
+        <label for="participantes">Número de Participantes:</label>
+        <input type="number" id="participantes" name="participantes" min="1">
+
+        <label for="genero">Género del Evento:</label>
+        <select id="genero" name="genero">
+            <option value="">Seleccione</option>
+            <option value="Femenil">Femenil</option>
+            <option value="Varonil">Varonil</option>
+            <option value="Mixto">Mixto</option>
+        </select>
+
+        <label>¿El Evento es Interno o Externo?</label>
+        <div class="radio-group">
+            <label>
+                <input type="radio" id="interno" name="tipo_evento" value="Interno" onchange="mostrarOrganizacion()" required>
+                Interno
+            </label>
+            <label>
+                <input type="radio" id="externo" name="tipo_evento" value="Externo" onchange="mostrarOrganizacion()" required>
+                Externo
+            </label>
+        </div>
+
+        <div class="organizacion-wrapper">
+            <div id="organizacion_interna" style="display:none;">
+                <label for="organizacion">Departamento:</label>
+                <select name="organizacion">
+                    <option value="">Seleccione un departamento</option>
+                    <option value="Dirección">Dirección</option>
+                    <option value="Subdirección de Planeación y Vinculación">Subdirección de Planeación y Vinculación</option>
+                    <option value="Subdirección Académica">Subdirección Académica</option>
+                    <option value="Subdirección de Servicios Administrativos">Subdirección de Servicios Administrativos</option>
+                    <option value="Depto. de Planeación, Programación y Presupuestación">Depto. de Planeación, Programación y Presupuestación</option>
+                    <option value="Depto. de Gestión Tecnológica y Vinculación">Depto. de Gestión Tecnológica y Vinculación</option>
+                    <option value="Depto. de Comunicación y Difusión">Depto. de Comunicación y Difusión</option>
+                    <option value="Depto. de Actividades Extraescolares">Depto. de Actividades Extraescolares</option>
+                    <option value="Depto. de Servicios Escolares">Depto. de Servicios Escolares</option>
+                    <option value="Centro de Información">Centro de Información</option>
+                    <option value="Depto. de Ciencias Básicas">Depto. de Ciencias Básicas</option>
+                    <option value="Depto. de Eléctrica y Electrónica">Depto. de Eléctrica y Electrónica</option>
+                    <option value="Depto. de Sistemas y Computación">Depto. de Sistemas y Computación</option>
+                    <option value="Depto. de Desarrollo Académico">Depto. de Desarrollo Académico</option>
+                    <option value="Depto. de Metal Mecánica">Depto. de Metal Mecánica</option>
+                    <option value="División de Estudios Profesionales">División de Estudios Profesionales</option>
+                    <option value="Depto. de Ingeniería Industrial">Depto. de Ingeniería Industrial</option>
+                    <option value="División de Estudios de Posgrado e Investigación">División de Estudios de Posgrado e Investigación</option>
+                    <option value="Depto. de Ciencias Económico Administrativas">Depto. de Ciencias Económico Administrativas</option>
+                    <option value="Depto. de Ingeniería">Depto. de Ingeniería</option>
+                    <option value="Depto. de Recursos Financieros">Depto. de Recursos Financieros</option>
+                    <option value="Depto. de Recursos Humanos">Depto. de Recursos Humanos</option>
+                    <option value="Depto. de Recursos Materiales y Servicios">Depto. de Recursos Materiales y Servicios</option>
+                    <option value="Centro de Cómputo">Centro de Cómputo</option>
+                    <option value="Depto. de Mantenimiento de Equipo">Depto. de Mantenimiento de Equipo</option>
+                </select>
+            </div>
+
+            <div id="organizacion_externa" style="display:none;">
+                <label for="organizacion_texto">Organización Externa:</label>
+                <input type="text" name="organizacion_texto" placeholder="Nombre de la organización externa">
+            </div>
+        </div>
+
         <label for="descripcion">Descripción:</label>
         <textarea id="descripcion" name="descripcion" rows="3"></textarea>
 
@@ -75,4 +164,10 @@
     </form>
 </div>
 
-
+<script>
+    function mostrarOrganizacion() {
+        const tipo = document.querySelector('input[name="tipo_evento"]:checked')?.value;
+        document.getElementById('organizacion_interna').style.display = tipo === 'Interno' ? 'block' : 'none';
+        document.getElementById('organizacion_externa').style.display = tipo === 'Externo' ? 'block' : 'none';
+    }
+</script>

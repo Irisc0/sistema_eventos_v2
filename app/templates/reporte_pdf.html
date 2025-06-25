@@ -33,40 +33,62 @@
         .evento b {
             display: inline-block;
             width: 120px;
-            font-weight: bold;
         }
 
-        .evento p {
-            margin: 4px 0;
+        .imagenes {
+            margin-top: 10px;
+        }
+
+        .imagenes img {
+            height: 150px;
+            margin: 5px;
+            border: 1px solid #aaa;
         }
     </style>
 </head>
 <body>
-    <h1>{{ titulo }}</h1>
+    {% if es_trimestral %}
+        <h1>Reporte Trimestral de {{ format_date(eventos[0].fecha_inicio, format='MMMM', locale='es_ES') }} a {{ format_date(eventos[-1].fecha_inicio, format='MMMM yyyy', locale='es_ES') }}</h1>
+    {% else %}
+        <h1>{{ titulo }}</h1>
+    {% endif %}
 
-    {% set semanas = {} %}
-    {% for evento in eventos %}
-        {% set inicio_semana = (evento.fecha_inicio - timedelta(days=evento.fecha_inicio.weekday())).date() %}
-        {% if semanas[inicio_semana] is defined %}
-            {% set _ = semanas[inicio_semana].append(evento) %}
-        {% else %}
-            {% set semanas = semanas.update({inicio_semana: [evento]}) or semanas %}
-        {% endif %}
-    {% endfor %}
+{% set eventos_por_mes = {} %}
+{% for evento in eventos %}
+    {% set key = evento.fecha_inicio.strftime('%Y-%m') %}
+    {% if eventos_por_mes[key] is defined %}
+        {% set _ = eventos_por_mes[key].append(evento) %}
+    {% else %}
+        {% set eventos_por_mes = eventos_por_mes.update({key: [evento]}) or eventos_por_mes %}
+    {% endif %}
+{% endfor %}
 
-    {% for inicio_semana, eventos_semana in semanas|dictsort %}
-        {% set fin_semana = inicio_semana + timedelta(days=6) %}
-        <h2>Semana {{ loop.index }}: {{ inicio_semana.strftime('%d/%m/%Y') }} al {{ fin_semana.strftime('%d/%m/%Y') }}</h2>
-        {% for evento in eventos_semana %}
-            <div class="evento">
-                <p><b>Nombre:</b> {{ evento.nombre }}</p>
-                <p><b>Inicio:</b> {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
-                <p><b>Fin:</b> {{ evento.fecha_fin.strftime('%d/%m/%Y %H:%M') }}</p>
-                <p><b>Responsable:</b> {{ evento.responsable }}</p>
-                <p><b>Lugar:</b> {{ evento.lugar }}</p>
-                <p><b>Descripción:</b> {{ evento.descripcion or '-' }}</p>
+{% for mes, eventos_mes in eventos_por_mes|dictsort %}
+    <h2>Eventos de {{ format_date(eventos_mes[0].fecha_inicio, format='MMMM yyyy', locale='es_ES') }}</h2>
+    {% for evento in eventos_mes %}
+        <div class="evento">
+            <p><b>Nombre:</b> {{ evento.nombre }}</p>
+            <p><b>Lugar:</b> {{ evento.lugar }}</p>
+            <p><b>Responsable:</b> {{ evento.responsable }}</p>
+            <p><b>Participantes:</b> {{ evento.participantes or '-' }}</p>
+            <p><b>Género: </b> {{ evento.genero or '-' }}</p>
+            <p><b>Tipo de Evento:</b>{{ evento.tipo_evento or '-' }}</p>
+            <p><b>Departamento u Organización:</b>{{ evento.organizacion or '-' }}</p>
+            <p><b>Inicio:</b> {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><b>Fin:</b> {{ evento.fecha_fin.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><b>Descripción:</b> {{ evento.descripcion or '-' }}</p>
+
+            {% set nombre_limpio = evento.nombre.lower().replace(" ", "_") %}
+            <div class="evento-images" style="display: flex; flex-wrap: wrap; justify-content: center;">
+                {% for archivo in archivos %}
+                    {% if archivo.lower().startswith('evento_' + nombre_limpio + '_') %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ archivo, _external=True) }}"
+                            style="max-width: 220px; margin: 10px;">
+                    {% endif %}
+                {% endfor %}
             </div>
-        {% endfor %}
+        </div>
     {% endfor %}
+{% endfor %}
 </body>
 </html>

@@ -4,6 +4,8 @@
 
 {% block content %}
     <h1>Instituto Tecnológico de Puebla</h1>
+    <h1>Sub dirección de planeación y Vinculación</h1>
+    <h1>Departamento de Actividades extraescolares</h1>
     <h1>Calendario de Eventos</h1>
 
 <div class="top-bar" style="justify-content: space-between;">
@@ -16,10 +18,35 @@
 <div id="calendar"></div>
 
 <div style="text-align: right; margin-top: 10px;">
-    <a href="{{ url_for('eventos.reporte_mes', year=now.year, month=now.month) }}"
+    <a id="boton-reporte-mensual"
+        href="#"
         style="padding: 10px 15px; background-color: #28a745; color: white; border-radius: 5px; text-decoration: none;">
         Descargar reporte de eventos mensual
     </a>
+
+     <a id="boton-reporte-trimestral"
+        href="#"
+        style="padding: 10px 15px; background-color: #ffc107; color: white; border-radius: 5px; text-decoration: none; margin-left: 10px;">
+        Descargar reporte de eventos trimestral
+    </a>
+</div>
+
+<div style="text-align: right; display: flex; margin-top: 10px;">
+    <a id="boton-eliminar-mensual"
+        href="#"
+        onclick="confirmarEliminarMes()"
+        style="padding: 10px 15px; background-color: #dc3545; color: white; border-radius: 5px; text-decoration: none;">
+        Eliminar eventos del mes
+    </a>
+</div>
+<div id="modalEliminarMes" style="display:none; position:fixed; z-index:99999; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6);">
+    <div style="background:#1f1f1f; color:white; padding:20px; border-radius:10px; width:300px; margin:15% auto; text-align:center;">
+        <p>¿Deseas eliminar todos los eventos del mes visible?</p>
+        <form id="formEliminarMes" method="POST">
+            <button type="submit" style="background-color:#dc3545; color:white; padding:8px 12px; border:none; border-radius:5px;">Sí, eliminar</button>
+            <button type="button" onclick="document.getElementById('modalEliminarMes').style.display='none'" style="margin-left:10px; padding:8px 12px; border:none; border-radius:5px;">Cancelar</button>
+        </form>
+    </div>
 </div>
 
 <h2>Eventos pendientes de aprobación</h2>
@@ -65,7 +92,6 @@
                 const el = info.el;
                 const props = info.event.extendedProps;
 
-                // HOVER
                 el.addEventListener('mouseenter', function(e) {
                     hoverBox.innerHTML = `
                         <b>${info.event.title}</b><br>
@@ -73,6 +99,10 @@
                         <b>Inicio:</b> ${new Date(info.event.start).toLocaleString()}<br>
                         <b>Fin:</b> ${new Date(info.event.end).toLocaleString()}<br>
                         <b>Lugar:</b> ${props.lugar}<br>
+                        <b>Participantes:</b> ${props.participantes || '-'}<br>
+                        <b>Género:</b> ${props.genero || '-'}<br>
+                        <b>Tipo:</b> ${props.tipo_evento || '-'}<br>
+                        <b>Organización:</b> ${props.organizacion || '-'}<br>
                         <b>Descripción:</b> ${props.descripcion || '-'}
                     `;
                     hoverBox.style.display = 'block';
@@ -100,11 +130,14 @@
                                 <b>Inicio:</b> ${new Date(ev.start).toLocaleString()}<br>
                                 <b>Fin:</b> ${new Date(ev.end).toLocaleString()}<br>
                                 <b>Lugar:</b> ${ex.lugar}<br>
+                                <b>Participantes:</b> ${ex.participantes || '-'}<br>
+                                <b>Género:</b> ${ex.genero || '-'}<br>
+                                <b>Tipo:</b> ${ex.tipo_evento || '-'}<br>
+                                <b>Organización:</b> ${ex.organizacion || '-'}<br>
                                 <b>Descripción:</b> ${ex.descripcion || '-'}<br>
                                 <button onclick="confirmarEliminacion('${ev.id}')" style="margin-top: 6px; background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px;">Eliminar evento</button>
                             </div>
                         `;
-
                     }).join('');
 
                     document.getElementById('overlay').style.display = 'block';
@@ -119,6 +152,33 @@
 
         calendar.render();
 
+        // ACTUALIZAR ENLACES DE BOTONES (reporte y eliminar) EN BASE AL MES VISUALIZADO
+        const botonReporte = document.getElementById('boton-reporte-mensual');
+        const botonReporteTrimestral = document.getElementById('boton-reporte-trimestral');
+        const botonEliminar = document.getElementById('boton-eliminar-mensual');
+
+        function actualizarBotonesMes() {
+            const fecha = calendar.view.currentStart;
+            const year = fecha.getFullYear();
+            const month = fecha.getMonth() + 1;
+
+            botonReporte.href = `/reporte_mes/${year}/${month}`;
+            document.getElementById('formEliminarMes').action = `/eliminar_eventos_mes/${year}/${month}`;
+
+            // Trimestre
+            let mesInicio = month - 2;
+            let anioInicio = year;
+            if (mesInicio <= 0) {
+                mesInicio += 12;
+                anioInicio -= 1;
+            }
+            botonReporteTrimestral.href = `/reporte_trimestre_rango/${anioInicio}/${mesInicio}`;
+        }
+
+        calendar.on('datesSet', actualizarBotonesMes);
+        actualizarBotonesMes();
+
+        // PANEL LATERAL
         document.getElementById('cerrarPanel').addEventListener('click', function () {
             const panel = document.getElementById('panelLateral');
             panel.style.right = '-320px';
@@ -130,6 +190,11 @@
 
         document.getElementById('overlay').addEventListener('click', function () {
             document.getElementById('cerrarPanel').click();
+        });
+
+        // Mostrar modal para confirmar eliminación de eventos del mes
+        botonEliminar.addEventListener('click', function () {
+            document.getElementById('modalEliminarMes').style.display = 'block';
         });
     });
 

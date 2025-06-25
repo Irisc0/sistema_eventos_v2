@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+import os
+import re
 from flask_login import login_required, current_user
 from app.models import Evento, User
 from app import db
@@ -6,7 +8,8 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash
 from flask import make_response
 from datetime import timedelta
-from calendar import monthrange
+from babel.dates import format_date
+from calendar import monthrange 
 from flask import request, redirect, url_for, render_template, flash, jsonify, make_response
 import pdfkit
 import shutil
@@ -58,18 +61,9 @@ LUGARES = [
     "108 - Mesas de Ping Pong - NO HABILITADO"
 ]
 
-# Eliminar eventos pasados
-def eliminar_eventos_vencidos():
-    hoy = datetime.now()
-    eventos_pasados = Evento.query.filter(Evento.fecha_fin < hoy).all()
-    for evento in eventos_pasados:
-        db.session.delete(evento)
-    db.session.commit()
-
 @eventos.route('/admin')
 @login_required
 def admin_index():
-    eliminar_eventos_vencidos()
     eventos_pendientes = Evento.query.filter(Evento.aprobado == None).all()
     return render_template('admin_index.html', eventos=eventos_pendientes, lugares=LUGARES)
 
@@ -103,35 +97,38 @@ def rechazar_evento(evento_id):
 def editar_evento(evento_id):
     evento = Evento.query.get_or_404(evento_id)
 
-    nuevo_nombre = request.form['nombre']
-    nuevo_lugar = request.form['lugar']
-    nueva_descripcion = request.form['descripcion']
-    nuevo_responsable = request.form['responsable']
-    nueva_fecha_inicio = datetime.strptime(request.form['fecha_inicio'], '%Y-%m-%dT%H:%M')
-    nueva_fecha_fin = datetime.strptime(request.form['fecha_fin'], '%Y-%m-%dT%H:%M')
+    evento.nombre = request.form['nombre']
+    evento.lugar = request.form['lugar']
+    evento.responsable = request.form['responsable']
+    evento.descripcion = request.form['descripcion']
+    evento.fecha_inicio = datetime.strptime(request.form['fecha_inicio'], '%Y-%m-%dT%H:%M')
+    evento.fecha_fin = datetime.strptime(request.form['fecha_fin'], '%Y-%m-%dT%H:%M')
 
-    if nueva_fecha_fin < nueva_fecha_inicio:
+    evento.participantes = int(request.form.get('participantes')) if request.form.get('participantes') else None
+    evento.genero = request.form.get('genero')
+    evento.tipo_evento = request.form.get('tipo_evento')
+
+    if evento.tipo_evento == "Interno":
+        evento.organizacion = request.form.get('organizacion')
+    elif evento.tipo_evento == "Externo":
+        evento.organizacion = request.form.get('organizacion_texto')
+
+    if evento.fecha_fin < evento.fecha_inicio:
         flash("La fecha y hora de fin no puede ser anterior a la de inicio.", "danger")
         return redirect(url_for('eventos.user_index'))
 
     conflicto = Evento.query.filter(
         Evento.id != evento.id,
         Evento.aprobado == True,
-        Evento.lugar == nuevo_lugar,
-        Evento.fecha_fin >= nueva_fecha_inicio,
-        Evento.fecha_inicio <= nueva_fecha_fin
+        Evento.lugar == evento.lugar,
+        Evento.fecha_fin >= evento.fecha_inicio,
+        Evento.fecha_inicio <= evento.fecha_fin
     ).first()
 
     if conflicto:
-        flash(f"Error: El lugar '{nuevo_lugar}' ya está reservado del {conflicto.fecha_inicio.strftime('%d/%m/%Y')} al {conflicto.fecha_fin.strftime('%d/%m/%Y')}.", "danger")
+        flash(f"Error: El lugar '{evento.lugar}' ya está reservado del {conflicto.fecha_inicio.strftime('%d/%m/%Y')} al {conflicto.fecha_fin.strftime('%d/%m/%Y')}.", "danger")
         return redirect(url_for('eventos.user_index'))
 
-    evento.nombre = nuevo_nombre
-    evento.lugar = nuevo_lugar
-    evento.descripcion = nueva_descripcion
-    evento.responsable = nuevo_responsable
-    evento.fecha_inicio = nueva_fecha_inicio
-    evento.fecha_fin = nueva_fecha_fin
     evento.aprobado = None
     evento.motivo_rechazo = None
 
@@ -139,18 +136,40 @@ def editar_evento(evento_id):
     flash("Evento editado y reenviado para revisión.", "info")
     return redirect(url_for('eventos.user_index'))
 
+import os
+import glob
+
 @eventos.route('/eliminar_evento/<int:evento_id>', methods=['POST'])
 @login_required
 def eliminar_evento(evento_id):
     evento = Evento.query.get_or_404(evento_id)
+
+    # Validar que el evento pertenezca al usuario o sea admin
+    if not current_user.es_admin() and evento.usuario_id != current_user.id:
+        flash("No tienes permiso para eliminar este evento.", "danger")
+        return redirect(url_for('eventos.user_index'))
+
+    # Borrar imágenes asociadas
+    nombre_limpio = evento.nombre.lower().replace(' ', '_')
+    patron = os.path.join('app', 'static', 'uploads', f'evento_{nombre_limpio}_*')
+    imagenes = glob.glob(patron)
+
+    for ruta in imagenes:
+        try:
+            os.remove(ruta)
+        except Exception as e:
+            print(f"No se pudo eliminar la imagen {ruta}: {e}")
+
+    # Eliminar el evento
     db.session.delete(evento)
     db.session.commit()
-    flash("Evento eliminado correctamente.", "success")
-    return redirect(url_for('eventos.user_index'))
+    flash("Evento y sus imágenes eliminados correctamente.", "success")
+
+    return redirect(url_for('eventos.admin_index' if current_user.es_admin() else 'eventos.user_index'))
+
 
 @eventos.route('/get_events')
 def get_events():
-    eliminar_eventos_vencidos()
     eventos_aprobados = Evento.query.filter_by(aprobado=True).all()
     data = []
     for evento in eventos_aprobados:
@@ -162,15 +181,20 @@ def get_events():
             'extendedProps': {
                 'descripcion': evento.descripcion,
                 'lugar': evento.lugar,
-                'responsable': evento.responsable
+                'responsable': evento.responsable,
+                'participantes': evento.participantes,
+                'genero': evento.genero,
+                'tipo_evento': evento.tipo_evento,
+                'organizacion': evento.organizacion,
+                'solicitado_por': evento.usuario.username if evento.usuario else 'Desconocido'
             }
         })
     return jsonify(data)
 
+
 @eventos.route('/inicio')
 @login_required
 def user_index():
-    eliminar_eventos_vencidos()
     eventos_usuario = Evento.query.filter_by(usuario_id=current_user.id).all()
     return render_template('index_users.html', eventos_usuario=eventos_usuario, lugares=LUGARES)
 
@@ -184,11 +208,21 @@ def solicitar_evento():
     fecha_inicio = datetime.strptime(request.form['fecha_inicio'], '%Y-%m-%dT%H:%M')
     fecha_fin = datetime.strptime(request.form['fecha_fin'], '%Y-%m-%dT%H:%M')
 
+    participantes = request.form.get('participantes')
+    genero = request.form.get('genero')
+    tipo_evento = request.form.get('tipo_evento')
+
+    if tipo_evento == "Interno":
+        organizacion = request.form.get('organizacion')  # de la lista
+    elif tipo_evento == "Externo":
+        organizacion = request.form.get('organizacion_texto')  # texto libre
+    else:
+        organizacion = None
+
     if fecha_fin < fecha_inicio:
         flash("La fecha y hora de fin no puede ser anterior a la de inicio.", "danger")
         return redirect(url_for('eventos.user_index'))
 
-    # Verificar conflictos con eventos ya aprobados en el mismo lugar y horario
     conflicto = Evento.query.filter(
         Evento.aprobado == True,
         Evento.lugar == lugar,
@@ -207,9 +241,14 @@ def solicitar_evento():
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
         descripcion=descripcion,
+        participantes=int(participantes) if participantes else None,
+        genero=genero,
+        tipo_evento=tipo_evento,
+        organizacion=organizacion,
         aprobado=None,
         usuario_id=current_user.id
     )
+
     db.session.add(nuevo_evento)
     db.session.commit()
     flash("Solicitud enviada correctamente.", "success")
@@ -321,6 +360,8 @@ def reset_password(user_id):
     return redirect(url_for('eventos.gestion_usuarios'))
 
 
+from flask import current_app, request  
+
 @eventos.route('/reporte_mes/<int:year>/<int:month>')
 @login_required
 def reporte_mes(year, month):
@@ -337,12 +378,145 @@ def reporte_mes(year, month):
         flash("No hay eventos en este mes.", "warning")
         return redirect(url_for('eventos.admin_index' if current_user.rol == 'admin' else 'eventos.user_index'))
 
-    titulo = f"Eventos de {start.strftime('%B de %Y')}"
+    titulo = f"Eventos de {format_date(start, format='MMMM yyyy', locale='es_ES')}"
 
-    html = render_template("reporte_pdf.html", eventos=eventos, titulo=titulo, timedelta=timedelta)
+    uploads_path = os.path.join(current_app.root_path, 'static', 'uploads')
+    archivos = []
+
+    if os.path.exists(uploads_path):
+        for archivo in os.listdir(uploads_path):
+            archivos.append(archivo)
+
+    html = render_template(
+        "reporte_pdf.html",
+        eventos=eventos,
+        titulo=titulo,
+        archivos=archivos,
+        timedelta=timedelta,
+        format_date=format_date,
+    )
+
     pdf = pdfkit.from_string(html, False, configuration=config)
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'inline; filename=reporte_mes_{month}_{year}.pdf'
     return response
+
+@eventos.route('/reporte_trimestre_rango/<int:anio_inicio>/<int:mes_inicio>')
+@login_required
+def reporte_trimestre_rango(anio_inicio, mes_inicio):
+    start = datetime(anio_inicio, mes_inicio, 1)
+
+    mes_fin = mes_inicio + 2
+    anio_fin = anio_inicio
+    if mes_fin > 12:
+        mes_fin -= 12
+        anio_fin += 1
+
+    end = datetime(anio_fin, mes_fin, monthrange(anio_fin, mes_fin)[1], 23, 59)
+
+    eventos = Evento.query.filter(
+        Evento.aprobado == True,
+        Evento.fecha_inicio >= start,
+        Evento.fecha_inicio <= end
+    ).order_by(Evento.fecha_inicio).all()
+
+    if not eventos:
+        flash("No hay eventos en este trimestre dinámico.", "warning")
+        return redirect(url_for('eventos.admin_index' if current_user.rol == 'admin' else 'eventos.user_index'))
+
+    titulo = f"Eventos de {format_date(start, format='MMMM', locale='es_ES').capitalize()} a {format_date(end, format='MMMM', locale='es_ES').capitalize()} de {end.year}"
+
+    uploads_path = os.path.join(current_app.root_path, 'static', 'uploads')
+    archivos = os.listdir(uploads_path) if os.path.exists(uploads_path) else []
+
+    html = render_template(
+        "reporte_pdf.html",
+        eventos=eventos,
+        titulo=titulo,
+        archivos=archivos,
+        timedelta=timedelta,
+        format_date=format_date,
+        es_trimestral=True
+    )
+    pdf = pdfkit.from_string(html, False, configuration=config)
+
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=reporte_trimestre_custom.pdf'
+    return response
+
+@eventos.route('/subir_imagenes/<int:evento_id>', methods=['POST'])
+@login_required
+def subir_imagenes(evento_id):
+    evento = Evento.query.get_or_404(evento_id)
+
+    if evento.usuario_id != current_user.id or not evento.aprobado:
+        flash("No puedes subir imágenes para este evento.", "danger")
+        return redirect(url_for('eventos.user_index'))
+
+    archivos = request.files.getlist('imagenes')
+    if not archivos or archivos[0].filename == '':
+        flash("No se seleccionó ninguna imagen.", "warning")
+        return redirect(url_for('eventos.user_index'))
+
+    extensiones_permitidas = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    rutas_guardadas = []
+
+    uploads_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    nombre_base = limpiar_nombre(evento.nombre)
+    
+    # Buscar cuántas imágenes ya existen con este nombre base
+    archivos_existentes = [
+        f for f in os.listdir(uploads_dir)
+        if f.startswith(f"evento_{nombre_base}_")
+    ]
+    contador_inicial = len(archivos_existentes) + 1
+
+    for i, archivo in enumerate(archivos, start=contador_inicial):
+        if archivo and '.' in archivo.filename:
+            extension = archivo.filename.rsplit('.', 1)[-1].lower()
+            if extension not in extensiones_permitidas:
+                continue
+
+            nombre_archivo = f"evento_{nombre_base}_{i}.{extension}"
+            ruta_completa = os.path.join(uploads_dir, nombre_archivo)
+            archivo.save(ruta_completa)
+
+            rutas_guardadas.append(f"static/uploads/{nombre_archivo}")
+
+    if rutas_guardadas:
+        evento.imagen = rutas_guardadas[-1]  # Última subida como principal
+        db.session.commit()
+        flash(f"Se subieron {len(rutas_guardadas)} imagen(es) correctamente.", "success")
+    else:
+        flash("No se subió ninguna imagen válida.", "warning")
+
+    return redirect(url_for('eventos.user_index'))
+
+@eventos.route('/eliminar_eventos_mes/<int:year>/<int:month>', methods=['POST'])
+@login_required
+def eliminar_eventos_mes(year, month):
+    if not current_user.es_admin():
+        flash("No tienes permisos para realizar esta acción.", "danger")
+        return redirect(url_for('eventos.admin_index'))
+
+    start = datetime(year, month, 1)
+    end = datetime(year, month, monthrange(year, month)[1], 23, 59)
+
+    eventos_a_borrar = Evento.query.filter(
+        Evento.fecha_inicio >= start,
+        Evento.fecha_inicio <= end
+    ).all()
+
+    count = len(eventos_a_borrar)
+    for evento in eventos_a_borrar:
+        db.session.delete(evento)
+
+    db.session.commit()
+
+    flash(f"Se eliminaron {count} evento(s) del mes seleccionado.", "success")
+    return redirect(url_for('eventos.admin_index'))
