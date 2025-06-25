@@ -520,3 +520,4 @@ def eliminar_eventos_mes(year, month):
 
     flash(f"Se eliminaron {count} evento(s) del mes seleccionado.", "success")
     return redirect(url_for('eventos.admin_index'))
+

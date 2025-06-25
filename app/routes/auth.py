@@ -34,3 +34,4 @@ def logout():
     logout_user()
     flash('Sesión cerrada correctamente', 'success')
     return redirect(url_for('auth.index'))
+
