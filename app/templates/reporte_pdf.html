@@ -83,7 +83,7 @@
                 {% for archivo in archivos %}
                     {% if archivo.lower().startswith('evento_' + nombre_limpio + '_') %}
                         <img src="{{ url_for('static', filename='uploads/' ~ archivo, _external=True) }}"
-                            style="max-width: 220px; margin: 10px;">
+                            style="max-width: 200px; margin: 2px;">
                     {% endif %}
                 {% endfor %}
             </div>

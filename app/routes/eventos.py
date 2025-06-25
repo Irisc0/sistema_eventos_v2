@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, make_response
 import os
 import re
 from flask_login import login_required, current_user
@@ -6,21 +6,14 @@ from app.models import Evento, User
 from app import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash
-from flask import make_response
 from datetime import timedelta
 from babel.dates import format_date
 from calendar import monthrange 
-from flask import request, redirect, url_for, render_template, flash, jsonify, make_response
-import pdfkit
+from weasyprint import HTML
 import shutil
 import platform
 
-# Configurar wkhtmltopdf dependiendo del sistema
-if platform.system() == "Windows":
-    config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
-else:
-    config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')  # Ruta por defecto en Render/Linux
-
+pdf = HTML(string=html, base_url=request.host_url).write_pdf()
 
 eventos = Blueprint('eventos', __name__)
 
@@ -396,7 +389,7 @@ def reporte_mes(year, month):
         format_date=format_date,
     )
 
-    pdf = pdfkit.from_string(html, False, configuration=config)
+    pdf = HTML(string=html, base_url=request.host_url).write_pdf()
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
@@ -440,7 +433,7 @@ def reporte_trimestre_rango(anio_inicio, mes_inicio):
         format_date=format_date,
         es_trimestral=True
     )
-    pdf = pdfkit.from_string(html, False, configuration=config)
+    pdf = HTML(string=html, base_url=request.host_url).write_pdf()
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
