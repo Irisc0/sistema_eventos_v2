@@ -1,19 +1,34 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, make_response
-import os
-import re
 from flask_login import login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import Evento, User
 from app import db
-from datetime import datetime
-from werkzeug.security import generate_password_hash
-from datetime import timedelta
+from datetime import datetime, timedelta
 from babel.dates import format_date
-from calendar import monthrange 
-from weasyprint import HTML
-import shutil
+from calendar import monthrange
+import os
+import re
 import platform
+import shutil
 
-pdf = HTML(string=html, base_url=request.host_url).write_pdf()
+# Detectar entorno y configurar
+USANDO_RENDER = os.environ.get("RENDER", False)
+
+try:
+    if USANDO_RENDER:
+        from weasyprint import HTML
+        PDF_MODE = "weasy"
+    else:
+        import pdfkit
+        PDF_MODE = "pdfkit"
+        if platform.system() == "Windows":
+            config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+        else:
+            config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+except ImportError as e:
+    PDF_MODE = None
+    print("⚠️ No se pudo cargar un generador PDF:", e)
+
 
 eventos = Blueprint('eventos', __name__)
 
@@ -374,11 +389,7 @@ def reporte_mes(year, month):
     titulo = f"Eventos de {format_date(start, format='MMMM yyyy', locale='es_ES')}"
 
     uploads_path = os.path.join(current_app.root_path, 'static', 'uploads')
-    archivos = []
-
-    if os.path.exists(uploads_path):
-        for archivo in os.listdir(uploads_path):
-            archivos.append(archivo)
+    archivos = os.listdir(uploads_path) if os.path.exists(uploads_path) else []
 
     html = render_template(
         "reporte_pdf.html",
@@ -386,10 +397,16 @@ def reporte_mes(year, month):
         titulo=titulo,
         archivos=archivos,
         timedelta=timedelta,
-        format_date=format_date,
+        format_date=format_date
     )
 
-    pdf = HTML(string=html, base_url=request.host_url).write_pdf()
+    if PDF_MODE == "weasy":
+        pdf = HTML(string=html).write_pdf()
+    elif PDF_MODE == "pdfkit":
+        pdf = pdfkit.from_string(html, False, configuration=config)
+    else:
+        flash("No se pudo generar el PDF. Verifica la configuración.", "danger")
+        return redirect(url_for('eventos.user_index'))
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
@@ -416,7 +433,7 @@ def reporte_trimestre_rango(anio_inicio, mes_inicio):
     ).order_by(Evento.fecha_inicio).all()
 
     if not eventos:
-        flash("No hay eventos en este trimestre dinámico.", "warning")
+        flash("No hay eventos en este trimestre.", "warning")
         return redirect(url_for('eventos.admin_index' if current_user.rol == 'admin' else 'eventos.user_index'))
 
     titulo = f"Eventos de {format_date(start, format='MMMM', locale='es_ES').capitalize()} a {format_date(end, format='MMMM', locale='es_ES').capitalize()} de {end.year}"
@@ -433,7 +450,14 @@ def reporte_trimestre_rango(anio_inicio, mes_inicio):
         format_date=format_date,
         es_trimestral=True
     )
-    pdf = HTML(string=html, base_url=request.host_url).write_pdf()
+
+    if PDF_MODE == "weasy":
+        pdf = HTML(string=html).write_pdf()
+    elif PDF_MODE == "pdfkit":
+        pdf = pdfkit.from_string(html, False, configuration=config)
+    else:
+        flash("No se pudo generar el PDF. Verifica la configuración.", "danger")
+        return redirect(url_for('eventos.user_index'))
 
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
