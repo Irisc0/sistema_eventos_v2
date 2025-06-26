@@ -477,6 +477,22 @@ def reporte_trimestre_rango(anio_inicio, mes_inicio):
     response.headers['Content-Disposition'] = f'inline; filename=reporte_trimestre_custom.pdf'
     return response
 
+
+import re
+
+def limpiar_nombre(nombre):
+    """
+    Limpia el nombre del evento para generar nombres de archivo seguros:
+    - Convierte a minúsculas
+    - Reemplaza espacios con guiones bajos
+    - Elimina caracteres no alfanuméricos
+    """
+    nombre = nombre.lower().strip()
+    nombre = re.sub(r'\s+', '_', nombre)  # Reemplaza espacios con "_"
+    nombre = re.sub(r'[^\w\-]', '', nombre)  # Elimina caracteres no válidos
+    return nombre
+
+
 @eventos.route('/subir_imagenes/<int:evento_id>', methods=['POST'])
 @login_required
 def subir_imagenes(evento_id):
