@@ -391,17 +391,24 @@ def reporte_mes(year, month):
     uploads_path = os.path.join(current_app.root_path, 'static', 'uploads')
     archivos = os.listdir(uploads_path) if os.path.exists(uploads_path) else []
 
+    # Ruta base para imágenes según el entorno
+    base_url = (
+        "http://localhost:5000/static/uploads" if PDF_MODE == "pdfkit"
+        else "/static/uploads"
+    )
+
     html = render_template(
         "reporte_pdf.html",
         eventos=eventos,
         titulo=titulo,
         archivos=archivos,
         timedelta=timedelta,
-        format_date=format_date
+        format_date=format_date,
+        imagen_base_url=base_url  # 👈 nuevo contexto
     )
 
     if PDF_MODE == "weasy":
-        pdf = HTML(string=html).write_pdf()
+        pdf = HTML(string=html, base_url=current_app.root_path).write_pdf()
     elif PDF_MODE == "pdfkit":
         pdf = pdfkit.from_string(html, False, configuration=config)
     else:
@@ -440,6 +447,12 @@ def reporte_trimestre_rango(anio_inicio, mes_inicio):
 
     uploads_path = os.path.join(current_app.root_path, 'static', 'uploads')
     archivos = os.listdir(uploads_path) if os.path.exists(uploads_path) else []
+
+    # Ruta base para imágenes según el entorno
+    base_url = (
+        "http://localhost:5000/static/uploads" if PDF_MODE == "pdfkit"
+        else "/static/uploads"
+    )
 
     html = render_template(
         "reporte_pdf.html",

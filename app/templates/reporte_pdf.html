@@ -82,7 +82,7 @@
             <div class="evento-images" style="display: flex; flex-wrap: wrap; justify-content: center;">
                 {% for archivo in archivos %}
                     {% if archivo.lower().startswith('evento_' + nombre_limpio + '_') %}
-                        <img src="{{ url_for('static', filename='uploads/' ~ archivo, _external=True) }}"
+                        <img src="{{ imagen_base_url ~ '/' ~ archivo }}"
                             style="max-width: 200px; margin: 2px;">
                     {% endif %}
                 {% endfor %}
